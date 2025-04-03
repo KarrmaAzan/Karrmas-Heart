@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: karrmas-heart
+    env: node
+    region: virginia
+    plan: free
+    buildCommand: |
+      cd frontend && npm install && npm run build
+      cd ../backend && npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: MONGO_URI
+        value: 
+      - key: JWT_SECRET
+        value: 
+    rootDir: backend
