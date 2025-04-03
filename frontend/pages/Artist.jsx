@@ -95,7 +95,7 @@ export default function ArtistPage() {
   useEffect(() => {
     const fetchArtistData = async () => {
       try {
-        const response = await api.get("/artist");
+        const response = await api.get("/api/v1/artist");
         const updatedArtist = {
           ...response.data.artist,
           image: response.data.artist.image?.trim()
