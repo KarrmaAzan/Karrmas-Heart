@@ -1,0 +1,18 @@
+# Node modules
+**/node_modules
+
+# Logs
+*.log
+
+# Env files
+**/.env*
+.env
+
+# Build outputs
+**/.next
+**/dist
+**/uploads
+out
+
+# Misc
+.DS_Store
