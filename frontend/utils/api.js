@@ -1,11 +1,10 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || '/api/v1',
-  withCredentials: true, // only needed if you're using cookies/sessions
+  baseURL: '/api/v1',
+  withCredentials: true,
 });
 
-// Attach Authorization token to all requests (client-side only)
 api.interceptors.request.use(
   (config) => {
     if (typeof window !== 'undefined') {
