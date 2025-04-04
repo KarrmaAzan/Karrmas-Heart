@@ -1,8 +1,9 @@
 import { useState, useContext } from "react";
-import { Box, Modal, Typography, TextField, Button } from "@mui/material";
+import { Box, Modal, Typography, TextField, Button, MenuItem } from "@mui/material";
 import { useRouter } from "next/router";
 import api from "../utils/api";
 import { AuthContext } from "../context/AuthContext"; // ✅
+import toast from "react-hot-toast";
 
 const modalStyle = {
   position: "absolute",
@@ -22,34 +23,55 @@ export default function LandingAuthModal() {
   const [name, setName] = useState(""); // Only used during registration
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState("user"); // ✅ Default to user
+  const [adminSecret, setAdminSecret] = useState(""); // ✅ Used only if role is admin
   const [errorMsg, setErrorMsg] = useState("");
   const { login } = useContext(AuthContext); // ✅ use global login()
+
+
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setErrorMsg("");
     try {
       const { data } = await api.post("/auth/login", { email, password });
-      if (data.token) {
-        login(data); // ✅ Automatically saves and routes
+      
+      if (data && data.token) {
+        toast.success("Welcome back!");
+        login(data); // will trigger redirect
       } else {
-        setErrorMsg("Login failed: No token returned");
+        toast.error("Login failed. No token returned.");
       }
     } catch (error) {
-      setErrorMsg(error.response?.data?.message || "Login failed");
+      const msg = error.response?.data?.message || "Invalid email or password.";
+      setErrorMsg(msg);
+      toast.error(msg);
     }
   };
-
+  
   const handleRegister = async (e) => {
     e.preventDefault();
     setErrorMsg("");
     try {
-      const { data } = await api.post("/auth/register", { name, email, password });
-      login(data); // ✅ Register and login right away
+      const { data } = await api.post("/auth/register", {
+        name,
+        email,
+        password,
+      });
+  
+      if (data && data.token) {
+        toast.success("Account created!");
+        login(data);
+      } else {
+        toast.error("Registration failed. No token returned.");
+      }
     } catch (error) {
-      setErrorMsg(error.response?.data?.message || "Registration failed");
+      const msg = error.response?.data?.message || "Registration failed";
+      setErrorMsg(msg);
+      toast.error(msg);
     }
   };
+  
 
   return (
     <Modal open={true} aria-labelledby="auth-modal-title">
@@ -59,16 +81,42 @@ export default function LandingAuthModal() {
         </Typography>
         <form onSubmit={isLogin ? handleLogin : handleRegister}>
           {!isLogin && (
-            <TextField
-              fullWidth
-              label="Name"
-              variant="outlined"
-              margin="normal"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
+            <>
+              <TextField
+                fullWidth
+                label="Name"
+                variant="outlined"
+                margin="normal"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+              <TextField
+                select
+                fullWidth
+                label="Role"
+                variant="outlined"
+                margin="normal"
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+              >
+                <MenuItem value="user">User</MenuItem>
+                <MenuItem value="admin">Admin</MenuItem>
+              </TextField>
+              {role === "admin" && (
+                <TextField
+                  fullWidth
+                  label="Admin Secret Key"
+                  variant="outlined"
+                  margin="normal"
+                  value={adminSecret}
+                  onChange={(e) => setAdminSecret(e.target.value)}
+                  required
+                />
+              )}
+            </>
           )}
+
           <TextField
             fullWidth
             label="Email"

@@ -1,25 +1,19 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { Container, Box } from "@mui/material";
-import Artist from "./Artist"; // ✅ updated path
+import Artist from "./Artist";
 import LandingAuthModal from "../components/LandingAuthModal";
+import { AuthContext } from "../context/AuthContext"; // ✅
 
 export default function Home() {
-  const [authenticated, setAuthenticated] = useState(false);
-
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      setAuthenticated(true);
-    }
-  }, []);
+  const { token } = useContext(AuthContext); // ✅ Use context state directly
 
   return (
     <>
       <Container>
-        <Artist />
+        {token && <Artist />}
       </Container>
 
-      {!authenticated && (
+      {!token && (
         <Box
           sx={{
             position: "fixed",
