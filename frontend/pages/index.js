@@ -1,19 +1,29 @@
-import { useEffect, useState, useContext } from "react";
+import { useEffect, useState } from "react";
 import { Container, Box } from "@mui/material";
 import Artist from "./Artist";
 import LandingAuthModal from "../components/LandingAuthModal";
-import { AuthContext } from "../context/AuthContext"; // ✅
 
 export default function Home() {
-  const { token } = useContext(AuthContext); // ✅ Use context state directly
+  const [isClient, setIsClient] = useState(false);
+  const [authenticated, setAuthenticated] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true); // 🚀 Only set true after mount
+    const token = localStorage.getItem("token");
+    if (token) {
+      setAuthenticated(true);
+    }
+  }, []);
+
+  if (!isClient) return null; // 🧠 Don't render until we're on client
 
   return (
     <>
       <Container>
-        {token && <Artist />}
+        <Artist />
       </Container>
 
-      {!token && (
+      {!authenticated && (
         <Box
           sx={{
             position: "fixed",

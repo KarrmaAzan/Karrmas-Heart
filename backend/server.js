@@ -56,17 +56,16 @@ if (process.env.NODE_ENV === 'production') {
   const handle = nextApp.getRequestHandler();
 
   nextApp.prepare().then(() => {
+    // Serve static files from Next.js build (just in case)
+    app.use(express.static(path.join(__dirname, '../frontend/.next')));
+    app.use(express.static(path.join(__dirname, '../frontend/public')));
+  
+    // Forward all remaining routes to Next.js
     app.all('*', (req, res) => handle(req, res));
-
+  
     app.listen(PORT, () => {
       console.log(`Server + Next.js running in production on port ${PORT}`);
     });
   });
-} else {
-  // Development: just run the backend
-  app.listen(PORT, () => {
-    console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-  });
 }
-
 module.exports = app;
