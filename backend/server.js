@@ -1,4 +1,3 @@
-// server.js
 const express = require('express');
 const dotenv = require('dotenv');
 const morgan = require('morgan');
@@ -31,20 +30,8 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Security middleware
 require('./middleware/security')(app);
 
-// API routes
-app.use('/api/v1/auth', require('./routes/authRoutes'));
-app.use('/api/v1/music', require('./routes/musicRoutes'));
-app.use('/api/v1/playlists', require('./routes/playlistRoutes'));
-app.use('/api/v1/search', require('./routes/searchRoutes'));
-app.use('/api/v1/analytics', require('./routes/analyticRoutes'));
-app.use('/api/v1/notifications', require('./routes/notificationRoutes'));
-app.use('/api/v1/payment', require('./routes/paymentRoutes'));
-app.use('/api/v1/artist', require('./routes/artistRoutes'));
-
-// Error handling middleware
+// ✅ Move API routes inside `nextApp.prepare()` when in production
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
-app.use(notFound);
-app.use(errorHandler);
 
 // Start server
 const PORT = process.env.PORT || 5000;
@@ -56,16 +43,48 @@ if (process.env.NODE_ENV === 'production') {
   const handle = nextApp.getRequestHandler();
 
   nextApp.prepare().then(() => {
-    // Serve static files from Next.js build (just in case)
+    // ✅ API routes must be defined AFTER Next.js prepares
+    app.use('/api/v1/auth', require('./routes/authRoutes'));
+    app.use('/api/v1/music', require('./routes/musicRoutes'));
+    app.use('/api/v1/playlists', require('./routes/playlistRoutes'));
+    app.use('/api/v1/search', require('./routes/searchRoutes'));
+    app.use('/api/v1/analytics', require('./routes/analyticRoutes'));
+    app.use('/api/v1/notifications', require('./routes/notificationRoutes'));
+    app.use('/api/v1/payment', require('./routes/paymentRoutes'));
+    app.use('/api/v1/artist', require('./routes/artistRoutes'));
+
+    // Error handling middleware (still applies)
+    app.use(notFound);
+    app.use(errorHandler);
+
+    // Serve static files from Next.js (precaution)
     app.use(express.static(path.join(__dirname, '../frontend/.next')));
     app.use(express.static(path.join(__dirname, '../frontend/public')));
-  
-    // Forward all remaining routes to Next.js
+
+    // ✅ All remaining routes handled by Next.js (critical!)
     app.all('*', (req, res) => handle(req, res));
-  
+
     app.listen(PORT, () => {
       console.log(`Server + Next.js running in production on port ${PORT}`);
     });
   });
+} else {
+  // Development: just run backend + middleware
+  app.use('/api/v1/auth', require('./routes/authRoutes'));
+  app.use('/api/v1/music', require('./routes/musicRoutes'));
+  app.use('/api/v1/playlists', require('./routes/playlistRoutes'));
+  app.use('/api/v1/search', require('./routes/searchRoutes'));
+  app.use('/api/v1/analytics', require('./routes/analyticRoutes'));
+  app.use('/api/v1/notifications', require('./routes/notificationRoutes'));
+  app.use('/api/v1/payment', require('./routes/paymentRoutes'));
+  app.use('/api/v1/artist', require('./routes/artistRoutes'));
+
+  app.use(notFound);
+  app.use(errorHandler);
+
+  app.listen(PORT, () => {
+    console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  });
 }
+
 module.exports = app;
