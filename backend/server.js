@@ -1,90 +1,95 @@
-const express = require('express');
-const dotenv = require('dotenv');
-const morgan = require('morgan');
-const path = require('path');
-const cors = require('cors');
-const connectDB = require('./config/db');
+import dotenv from "dotenv";
+dotenv.config();
 
-// Load environment variables
-dotenv.config({ path: `.env.${process.env.NODE_ENV || 'development'}` });
+import express from "express";
+import mongoose from "mongoose";
+import helmet from "helmet";
+import xss from "xss-clean";
+import mongoSanitize from "express-mongo-sanitize";
+import cookieParser from "cookie-parser";
+import rateLimit from "express-rate-limit";
+import path from "path";
+import { fileURLToPath } from "url";
 
-// Connect to database
-connectDB();
+// Setup __dirname for ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Middleware
+// Security middleware
+app.use(helmet());
+app.use(xss());
+app.use(mongoSanitize());
+app.use(cookieParser());
+
+// CORS — open for now (secure later)
+import cors from "cors";
+app.use(cors({ origin: true, credentials: true }));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use(cors({
-  origin: true,
-  credentials: true,
+// Rate Limiting
+app.use(rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10000,
 }));
 
-app.use(morgan('dev'));
+// MongoDB
+import connectDB from './config/db.js';
+connectDB();
 
-// Static file serving for uploaded files
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Static files
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// Security middleware
-require('./middleware/security')(app);
+// Routes
+import authRoutes from "./routes/authRoutes.js";
+import musicRoutes from "./routes/musicRoutes.js";
+import playlistRoutes from "./routes/playlistRoutes.js";
+import searchRoutes from "./routes/searchRoutes.js";
+import analyticRoutes from "./routes/analyticRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
+import artistRoutes from "./routes/artistRoutes.js";
 
-// ✅ Move API routes inside `nextApp.prepare()` when in production
-const { notFound, errorHandler } = require('./middleware/errorMiddleware');
+// ✅ API routes
+app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/music", musicRoutes);
+app.use("/api/v1/playlists", playlistRoutes);
+app.use("/api/v1/search", searchRoutes);
+app.use("/api/v1/analytics", analyticRoutes);
+app.use("/api/v1/notifications", notificationRoutes);
+app.use("/api/v1/payment", paymentRoutes);
+app.use("/api/v1/artist", artistRoutes);
 
-// Start server
-const PORT = process.env.PORT || 5000;
+// ✅ Error handling for unknown API routes
+app.use((req, res, next) => {
+  if (req.path.startsWith("/api")) {
+    return res.status(404).json({ message: "API Route not found" });
+  }
+  next();
+});
 
-// 🧠 Use Next.js in production (SSR)
-if (process.env.NODE_ENV === 'production') {
-  const next = require('next');
-  const nextApp = next({ dev: false, dir: path.join(__dirname, '../frontend') });
+// ✅ Handle Next.js app in production
+if (process.env.NODE_ENV === "production") {
+  const next = (await import("next")).default;
+  const nextApp = next({ dev: false, dir: path.join(__dirname, "../frontend") });
   const handle = nextApp.getRequestHandler();
 
-  nextApp.prepare().then(() => {
-    // ✅ API routes must be defined AFTER Next.js prepares
-    app.use('/api/v1/auth', require('./routes/authRoutes'));
-    app.use('/api/v1/music', require('./routes/musicRoutes'));
-    app.use('/api/v1/playlists', require('./routes/playlistRoutes'));
-    app.use('/api/v1/search', require('./routes/searchRoutes'));
-    app.use('/api/v1/analytics', require('./routes/analyticRoutes'));
-    app.use('/api/v1/notifications', require('./routes/notificationRoutes'));
-    app.use('/api/v1/payment', require('./routes/paymentRoutes'));
-    app.use('/api/v1/artist', require('./routes/artistRoutes'));
+  await nextApp.prepare();
 
-    // Error handling middleware (still applies)
-    app.use(notFound);
-    app.use(errorHandler);
+  // 🔁 Forward everything else to Next.js
+  app.all("*", (req, res) => handle(req, res));
 
-    // Serve static files from Next.js (precaution)
-    app.use(express.static(path.join(__dirname, '../frontend/.next')));
-    app.use(express.static(path.join(__dirname, '../frontend/public')));
-
-    // ✅ All remaining routes handled by Next.js (critical!)
-    app.all('*', (req, res) => handle(req, res));
-
-    app.listen(PORT, () => {
-      console.log(`Server + Next.js running in production on port ${PORT}`);
-    });
-  });
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () =>
+    console.log(`🚀 Server + Next.js running in production on port ${PORT}`)
+  );
 } else {
-  // Development: just run backend + middleware
-  app.use('/api/v1/auth', require('./routes/authRoutes'));
-  app.use('/api/v1/music', require('./routes/musicRoutes'));
-  app.use('/api/v1/playlists', require('./routes/playlistRoutes'));
-  app.use('/api/v1/search', require('./routes/searchRoutes'));
-  app.use('/api/v1/analytics', require('./routes/analyticRoutes'));
-  app.use('/api/v1/notifications', require('./routes/notificationRoutes'));
-  app.use('/api/v1/payment', require('./routes/paymentRoutes'));
-  app.use('/api/v1/artist', require('./routes/artistRoutes'));
-
-  app.use(notFound);
-  app.use(errorHandler);
-
-  app.listen(PORT, () => {
-    console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-  });
+  // In development: run Express only (Next runs via its own dev server)
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () =>
+    console.log(`🚀 Backend running in dev mode on port ${PORT}`)
+  );
 }
-
-module.exports = app;
