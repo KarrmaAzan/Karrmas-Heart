@@ -1,21 +1,20 @@
 import { useEffect, useState } from "react";
 import { Container, Box } from "@mui/material";
-import Artist from "./Artist";
+import Artist from "./Artist"; // ✅ updated path
 import LandingAuthModal from "../components/LandingAuthModal";
 
 export default function Home() {
-  const [isClient, setIsClient] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
 
+  // Run useEffect always (on mount)
   useEffect(() => {
-    setIsClient(true); // 🚀 Only set true after mount
-    const token = localStorage.getItem("token");
-    if (token) {
-      setAuthenticated(true);
+    if (typeof window !== "undefined") { // Check that we're on the client side
+      const token = localStorage.getItem("token");
+      if (token) {
+        setAuthenticated(true);
+      }
     }
-  }, []);
-
-  if (!isClient) return null; // 🧠 Don't render until we're on client
+  }, []); // Empty dependency means it runs only once after the first render
 
   return (
     <>
