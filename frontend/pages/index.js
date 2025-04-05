@@ -1,20 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { Container, Box } from "@mui/material";
-import Artist from "./Artist"; // ✅ updated path
+import Artist from "./Artist";
 import LandingAuthModal from "../components/LandingAuthModal";
+import { AuthContext } from "../context/AuthContext"; // ✅ Add context usage
 
 export default function Home() {
+  const { token, loading } = useContext(AuthContext); // ✅ use context values
   const [authenticated, setAuthenticated] = useState(false);
 
-  // Run useEffect always (on mount)
   useEffect(() => {
-    if (typeof window !== "undefined") { // Check that we're on the client side
-      const token = localStorage.getItem("token");
-      if (token) {
-        setAuthenticated(true);
-      }
+    if (!loading) {
+      setAuthenticated(!!token); // ✅ Set authenticated when loading finishes
     }
-  }, []); // Empty dependency means it runs only once after the first render
+  }, [token, loading]);
+
+  if (loading) return null; // ✅ Avoid rendering before checking auth
 
   return (
     <>

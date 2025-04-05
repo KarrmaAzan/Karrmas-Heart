@@ -1,6 +1,6 @@
 import { createContext, useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import toast from 'react-hot-toast'; // ✅ Make sure this is imported
+import toast from 'react-hot-toast';
 
 export const AuthContext = createContext();
 
@@ -8,8 +8,8 @@ export default function AuthProvider({ children }) {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
+  const [loading, setLoading] = useState(true); // ✅ Added loading state
 
-  // Load from localStorage on mount
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     const storedToken = localStorage.getItem('token');
@@ -17,6 +17,7 @@ export default function AuthProvider({ children }) {
       setUser(JSON.parse(storedUser));
       setToken(storedToken);
     }
+    setLoading(false); // ✅ Done loading
   }, []);
 
   const login = (userData) => {
@@ -25,11 +26,8 @@ export default function AuthProvider({ children }) {
     setUser(userData);
     setToken(userData.token);
 
-    toast.success(`Welcome back, ${userData.name || 'friend'}! 💛`); // ✅ Login toast
-
-   
-      router.push('/');
-  
+    toast.success(`Welcome back, ${userData.name || 'friend'}! 💛`);
+    router.push('/');
   };
 
   const logout = () => {
@@ -37,12 +35,12 @@ export default function AuthProvider({ children }) {
     localStorage.removeItem('token');
     setUser(null);
     setToken(null);
-    toast.success('Logged out successfully 👋'); // ✅ Logout notification
+    toast.success('Logged out successfully 👋');
     router.push('/login');
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, logout }}>
+    <AuthContext.Provider value={{ user, token, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );
