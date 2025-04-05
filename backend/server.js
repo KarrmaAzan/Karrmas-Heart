@@ -1,13 +1,12 @@
-// ✅ Load .env EARLY before anything else
+// ✅ Load .env from /backend (your actual root for backend stuff)
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
 
-// Setup __dirname for ES Modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ✅ Ensure .env loads from root
+// ✅ Load .env from this folder (backend)
 dotenv.config({ path: path.resolve(__dirname, "./.env") });
 
 // ✅ Validate STRIPE_SECRET_KEY early
@@ -31,31 +30,30 @@ connectDB();
 
 const app = express();
 
-// Security Middleware
+// ✅ Security & parsing middleware
 app.use(helmet());
 app.use(xss());
 app.use(mongoSanitize());
 app.use(cookieParser());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
+// ✅ Rate limiting
 app.use(rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10000
 }));
 
-// Body parsing
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// CORS (open for now; lock down later)
+// ✅ CORS (open for now)
 app.use(cors({
   origin: true,
   credentials: true,
 }));
 
-// Static file serving
+// ✅ Static file serving
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// ROUTES
+// ✅ Routes
 import authRoutes from "./routes/authRoutes.js";
 import musicRoutes from "./routes/musicRoutes.js";
 import playlistRoutes from "./routes/playlistRoutes.js";
@@ -64,14 +62,12 @@ import analyticRoutes from "./routes/analyticRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import artistRoutes from "./routes/artistRoutes.js";
 
-// ✅ Register routes function (used in all envs)
 const registerRoutes = () => {
   app.use("/api/v1/auth", authRoutes);
   app.use("/api/v1/music", musicRoutes);
   app.use("/api/v1/playlists", playlistRoutes);
   app.use("/api/v1/search", searchRoutes);
   app.use("/api/v1/analytics", analyticRoutes);
-  // app.use("/api/v1/notifications", notificationRoutes);
   app.use("/api/v1/payment", paymentRoutes);
   console.log("✅ Registering /api/v1/artist");
   app.use("/api/v1/artist", artistRoutes);
@@ -80,12 +76,12 @@ const registerRoutes = () => {
   });
 };
 
-// Register routes for dev
+// ✅ Dev: Register routes immediately
 if (process.env.NODE_ENV !== "production") {
   registerRoutes();
 }
 
-// API 404 fallback
+// ✅ API 404 fallback
 app.use((req, res, next) => {
   if (req.path.startsWith("/api")) {
     return res.status(404).json({ message: "API route not found" });
@@ -93,15 +89,17 @@ app.use((req, res, next) => {
   next();
 });
 
-// NEXT.JS SSR - ONLY IN PRODUCTION
+// ✅ PRODUCTION SSR SETUP
 if (process.env.NODE_ENV === "production") {
   const next = (await import("next")).default;
+
+  // ✅ Point to frontend one level up
   const nextApp = next({ dev: false, dir: path.join(__dirname, "../frontend") });
   const handle = nextApp.getRequestHandler();
 
   await nextApp.prepare();
 
-  // ✅ Register API routes here too
+  // ✅ Register routes in prod too
   registerRoutes();
 
   app.use(express.static(path.join(__dirname, "../frontend/.next")));
