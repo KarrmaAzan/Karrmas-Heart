@@ -23,7 +23,7 @@ import xss from "xss-clean";
 import mongoSanitize from "express-mongo-sanitize";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
-// import cors from "cors";
+import cors from "cors";
 
 // Connect MongoDB
 import connectDB from "./config/db.js";
@@ -46,11 +46,11 @@ app.use(rateLimit({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// // CORS (open for now; lock down later)
-// app.use(cors({
-//   origin: true,
-//   credentials: true,
-// }));
+// CORS (open for now; lock down later)
+app.use(cors({
+  origin: true,
+  credentials: true,
+}));
 
 // Static file serving
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
@@ -71,6 +71,7 @@ app.use("/api/v1/search", searchRoutes);
 app.use("/api/v1/analytics", analyticRoutes);
 // app.use("/api/v1/notifications", notificationRoutes);
 app.use("/api/v1/payment", paymentRoutes);
+console.log("✅ Registering /api/v1/artist");
 app.use("/api/v1/artist", artistRoutes);
 
 // API 404 fallback

@@ -3,7 +3,10 @@ import Music from '../models/Music.js';
 import path from 'path';
 import fs from 'fs';
 
-const BASE_URL = process.env.BASE_URL || "http://localhost:5000";
+const BASE_URL = process.env.NODE_ENV === "production"
+  ? "https://karrmas-heart.onrender.com"
+  : "http://localhost:5000";
+
 
 // 📄 controllers/artistController.js
 
@@ -26,16 +29,23 @@ export const registerArtist = async (req, res) => {
 
 // GET Artist Page (for Artist.jsx)
 export const getArtistPage = async (req, res) => {
+  console.log("✅ [API] GET /api/v1/artist");
+
+  // Dynamically build correct BASE_URL for prod or dev
+  const getBaseUrl = (req) => `${req.protocol}://${req.get("host")}`;
+
   try {
     const artist = await Artist.findOne().lean();
+
     if (!artist) {
+      console.log("❌ No artist found.");
       return res.status(404).json({ message: "Artist not found." });
     }
 
     // Normalize image URL
     const imageUrl = artist.image?.includes("http")
       ? artist.image
-      : `${BASE_URL}${artist.image}`;
+      : `${getBaseUrl(req)}${artist.image}`;
 
     // Get all songs and top 5
     const allSongs = await Music.find({ artist: artist._id }).lean();
@@ -51,16 +61,22 @@ export const getArtistPage = async (req, res) => {
         artist: artist.name,
       }));
 
-    res.status(200).json({
+    const responsePayload = {
       artist: { ...artist, image: imageUrl },
       topSongs: attachArtistName(topSongs),
       allSongs: attachArtistName(allSongs),
-    });
+    };
+
+    // 🔍 Log the full response payload
+    console.log("🎯 Artist Page Response:", JSON.stringify(responsePayload, null, 2));
+
+    res.status(200).json(responsePayload);
   } catch (error) {
     console.error("🔥 Error fetching artist page:", error);
     res.status(500).json({ message: "Internal Server Error", error: error.message });
   }
 };
+
 
 // PUT Update Artist Image
 export const updateArtistImage = async (req, res) => {
