@@ -44,11 +44,14 @@ app.use(rateLimit({
   max: 10000
 }));
 
-// ✅ CORS (open for now; adjust later for Vercel domain)
 app.use(cors({
-  origin: true,
+  origin: [
+    "http://localhost:3000",                  // local dev
+    "https://karrmas-heart.vercel.app"        // ✅ live frontend
+  ],
   credentials: true,
 }));
+
 
 // ✅ Static file serving
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
