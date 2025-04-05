@@ -44,14 +44,23 @@ app.use(rateLimit({
   max: 10000
 }));
 
+const allowedOrigins = [
+  "http://localhost:3000", // dev
+  "https://karrmas-heart.vercel.app" // prod
+];
+
 app.use(cors({
-  origin: [
-    "http://localhost:3000",                  // local dev
-    "https://karrmas-heart.vercel.app"        // ✅ live frontend
-  ],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, Postman)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error("❌ Not allowed by CORS"));
+    }
+  },
   credentials: true,
 }));
-
 
 // ✅ Static file serving
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
