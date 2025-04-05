@@ -1,8 +1,9 @@
-// middleware/security.js
-const helmet = require('helmet');
-const rateLimiter = require('./rateLimit');
+import helmet from 'helmet';
+import rateLimiter from './rateLimit.js';
 
-module.exports = (app) => {
+const applySecurityMiddleware = (app) => {
   app.use(helmet());
   app.use(rateLimiter);
 };
+
+export default applySecurityMiddleware;

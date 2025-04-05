@@ -1,16 +1,12 @@
-const express = require('express');
+import express from 'express';
+import { registerArtist, getArtistPage, updateArtistImage } from '../controllers/artistController.js';
+import upload from '../middleware/uploadMiddleware.js';
+import { protect, admin } from '../middleware/authMiddleware.js';
+
 const router = express.Router();
-const { registerArtist, getArtistPage, updateArtistImage } = require('../controllers/artistController');
-const upload = require('../middleware/uploadMiddleware');
-const { protect, admin } = require('../middleware/authMiddleware');
 
-// Register the artist (with optional image upload)
 router.post('/register', upload.single('image'), registerArtist);
-
-// Get artist page
 router.get('/', getArtistPage);
-
-// Update artist image
 router.put('/update-image', protect, admin, upload.single('image'), updateArtistImage);
 
-module.exports = router;
+export default router;

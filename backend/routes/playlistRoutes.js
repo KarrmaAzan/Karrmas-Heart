@@ -1,10 +1,13 @@
-// routes/playlistRoutes.js
-const express = require('express');
-const router = express.Router();
-const { protect } = require('../middleware/authMiddleware');
-const { createPlaylist, addTrackToPlaylist } = require('../controllers/playlistController');
+import express from 'express';
+import { protect } from '../middleware/authMiddleware.js';
+import { createPlaylist, addTrackToPlaylist } from "../controllers/playlistController.js";
 
-router.post('/', protect, createPlaylist);
+const router = express.Router();
+
+// Create a new playlist
+router.post('/create', protect, createPlaylist);
+
+// Add a track to a playlist
 router.put('/add-track', protect, addTrackToPlaylist);
 
-module.exports = router;
+export default router;

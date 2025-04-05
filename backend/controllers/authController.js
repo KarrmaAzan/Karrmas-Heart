@@ -1,12 +1,9 @@
-// controllers/authController.js
-const User = require('../models/User');
-const jwt = require('jsonwebtoken');
+import User from '../models/User.js';
+import jwt from 'jsonwebtoken';
 
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
-};
+const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '30d' });
 
-exports.register = async (req, res, next) => {
+export const register = async (req, res, next) => {
   const { name, email, password, role, adminSecret } = req.body;
   try {
     let user = await User.findOne({ email });
@@ -15,10 +12,7 @@ exports.register = async (req, res, next) => {
       throw new Error('User already exists');
     }
 
-    // Default role is "user"
     let newRole = 'user';
-
-    // Only allow creating an admin if the adminSecret matches the environment variable
     if (role === 'admin') {
       if (!adminSecret || adminSecret !== process.env.ADMIN_SECRET) {
         res.status(403);
@@ -40,7 +34,7 @@ exports.register = async (req, res, next) => {
   }
 };
 
-exports.login = async (req, res, next) => {
+export const login = async (req, res, next) => {
   const { email, password } = req.body;
   try {
     const user = await User.findOne({ email });

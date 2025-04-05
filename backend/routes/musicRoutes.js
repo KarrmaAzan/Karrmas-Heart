@@ -1,57 +1,51 @@
-const express = require('express');
-const router = express.Router();
-const { protect, admin } = require('../middleware/authMiddleware');
-const {
+import express from 'express';
+import { protect, admin } from '../middleware/authMiddleware.js';
+import {
   uploadMiddleware,
   getAllMusic,
   streamMusic,
   incrementPlayCount
-} = require('../controllers/musicController');
-const Artist = require('../models/Artist');
+} from '../controllers/musicController.js';
+import Artist from '../models/Artist.js';
+import Music from '../models/Music.js'; // ✅ Required for new Music()
 
+const router = express.Router();
 
 // 🔹 Upload music (linked to the artist)
 router.post('/', protect, admin, uploadMiddleware, async (req, res) => {
   try {
-    // Destructure title, duration, description from req.body.
-    // Note: We intentionally do not extract fileUrl from req.body.
     const { title, duration, description } = req.body;
-    
-    // Log to verify if Multer processed a file.
+
     console.log("Request file:", req.file);
 
-    // Build fileUrl from the uploaded file if available.
     let fileUrl;
     if (req.file) {
       fileUrl = `/uploads/${req.file.filename}`;
     } else if (req.body.fileUrl) {
-      // Fallback in case you want to supply a URL via request body.
       fileUrl = req.body.fileUrl;
     }
-    
-    // If no file URL is available, return an error.
+
     if (!fileUrl) {
       console.error("No file uploaded or fileUrl provided");
       return res.status(400).json({ message: 'No file uploaded or fileUrl provided' });
     }
-    
-    // Find the artist in the database (assuming there's only one)
+
     const artist = await Artist.findOne();
     if (!artist) {
       console.error("Artist not found");
       return res.status(404).json({ message: 'Artist not found. Register an artist first.' });
     }
-    
-    // Create and save the new song, linking it to the artist.
-    const newSong = new (require('../models/Music'))({ 
+
+    const newSong = new Music({ 
       title, 
       fileUrl, 
       duration, 
       description, 
       artist: artist._id 
     });
+
     await newSong.save();
-    
+
     console.log("Uploaded song:", newSong);
     res.status(201).json({ message: 'Song uploaded successfully.', song: newSong });
   } catch (error) {
@@ -60,12 +54,13 @@ router.post('/', protect, admin, uploadMiddleware, async (req, res) => {
   }
 });
 
-// 🔹 Get all music (Already works)
+// 🔹 Get all music
 router.get('/', getAllMusic);
 
-// 🔹 Stream a song by ID (Already works)
+// 🔹 Stream a song by ID
 router.get('/stream/:id', streamMusic);
 
+// 🔹 Increment play count
 router.patch('/increment-playcount/:id', protect, incrementPlayCount);
 
-module.exports = router;
+export default router; // ✅ Required for ESM usage

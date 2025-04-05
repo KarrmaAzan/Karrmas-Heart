@@ -1,14 +1,13 @@
-// controllers/playlistController.js
-const Playlist = require('../models/Playlist');
+import Playlist from '../models/Playlist.js';
 
-exports.createPlaylist = async (req, res, next) => {
+export const createPlaylist = async (req, res, next) => {
   const { name, description } = req.body;
   try {
     const playlist = await Playlist.create({
       name,
       description,
       user: req.user._id,
-      tracks: []
+      tracks: [],
     });
     res.status(201).json(playlist);
   } catch (error) {
@@ -16,15 +15,13 @@ exports.createPlaylist = async (req, res, next) => {
   }
 };
 
-exports.addTrackToPlaylist = async (req, res, next) => {
+export const addTrackToPlaylist = async (req, res, next) => {
   const { playlistId, trackId } = req.body;
   try {
     const playlist = await Playlist.findById(playlistId);
     if (!playlist) {
-      res.status(404);
-      throw new Error('Playlist not found');
+      return res.status(404).json({ message: 'Playlist not found' });
     }
-    // Optionally, check that the playlist belongs to req.user
     playlist.tracks.push(trackId);
     await playlist.save();
     res.json(playlist);

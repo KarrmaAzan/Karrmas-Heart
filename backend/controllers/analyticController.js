@@ -1,10 +1,8 @@
-// controllers/analyticsController.js
-const Music = require('../models/Music');
+import Music from '../models/Music.js';
 
-exports.trackPlayback = async (req, res, next) => {
+export const trackPlayback = async (req, res, next) => {
   const { id } = req.params;
   try {
-    // Assumes you have a playCount field in your Music model
     const music = await Music.findByIdAndUpdate(id, { $inc: { playCount: 1 } }, { new: true });
     res.json({ playCount: music.playCount });
   } catch (error) {

@@ -1,8 +1,8 @@
-const express = require('express');
-const router = express.Router();
-const { searchMusic } = require('../controllers/searchController');
+import express from 'express';
+import { searchMusic } from '../controllers/searchController.js';
 
-// Updated route: no '/music' suffix so the endpoint is /api/v1/search
+const router = express.Router();
+
 router.get('/', searchMusic);
 
-module.exports = router;
+export default router;

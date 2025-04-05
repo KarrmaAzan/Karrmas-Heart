@@ -1,7 +1,6 @@
-// controllers/paymentController.js
-const stripe = require('../config/stripe');
+import stripe from '../config/stripe.js';
 
-exports.createCheckoutSession = async (req, res, next) => {
+export const createCheckoutSession = async (req, res, next) => {
   const { priceId } = req.body;
   try {
     const session = await stripe.checkout.sessions.create({
@@ -16,3 +15,4 @@ exports.createCheckoutSession = async (req, res, next) => {
     next(error);
   }
 };
+ 

@@ -1,10 +1,16 @@
-const Music = require('../models/Music');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-const mime = require('mime-types'); // npm install mime-types if not already installed
+import Music from '../models/Music.js';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import mime from 'mime-types';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 
-// Configure Multer storage for music uploads
+// 📦 Fix __dirname for ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// 🔧 Multer storage config
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, 'uploads/');
@@ -14,7 +20,7 @@ const storage = multer.diskStorage({
   }
 });
 
-// Accept only MP3 and M4A file types
+// 🔍 File type filtering
 const fileFilter = (req, file, cb) => {
   const allowedTypes = ['audio/mpeg', 'audio/mp4', 'audio/x-m4a'];
   if (allowedTypes.includes(file.mimetype)) {
@@ -24,32 +30,44 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-exports.uploadMiddleware = multer({ storage, fileFilter }).single('music');
+// 📤 Export multer middleware for routes
+export const uploadMiddleware = multer({ storage, fileFilter }).single('music');
 
-exports.addMusic = async (req, res, next) => {
-  const { title, duration, description } = req.body;
-  const file = req.file;
-  if (!file) {
-    res.status(400);
-    return next(new Error('No file uploaded'));
-  }
+// 🔊 Upload a new song (linked to artist)
+export const uploadSongWithArtist = async (req, res) => {
   try {
-    // When creating the document, we store the fileUrl as usual.
-    const music = await Music.create({
+    const { title, duration, description } = req.body;
+    let fileUrl = req.file
+      ? `/uploads/${req.file.filename}`
+      : req.body.fileUrl;
+
+    if (!fileUrl) {
+      return res.status(400).json({ message: 'No file uploaded or fileUrl provided' });
+    }
+
+    const { default: Artist } = await import('../models/Artist.js');
+    const artist = await Artist.findOne();
+    if (!artist) return res.status(404).json({ message: 'Artist not found. Register an artist first.' });
+
+    const newSong = new Music({
       title,
-      fileUrl: `/uploads/${file.filename}`,
+      fileUrl,
       duration,
-      description
+      description,
+      artist: artist._id
     });
-    res.status(201).json(music);
+
+    await newSong.save();
+    res.status(201).json({ message: 'Song uploaded successfully.', song: newSong });
   } catch (error) {
-    next(error);
+    console.error('Error uploading song:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
   }
 };
 
-exports.getAllMusic = async (req, res, next) => {
+// 🎶 Get all songs
+export const getAllMusic = async (req, res, next) => {
   try {
-    // Populate the artist field with the artist's name
     const musics = await Music.find()
       .populate('artist', 'name')
       .sort({ releaseDate: -1 });
@@ -59,59 +77,46 @@ exports.getAllMusic = async (req, res, next) => {
   }
 };
 
-exports.streamMusic = async (req, res, next) => {
+// 📡 Stream music with range support
+export const streamMusic = async (req, res, next) => {
   try {
-    const id = req.params.id.trim(); // Remove any extra whitespace/newlines
-    // Populate the artist field here as well
+    const id = req.params.id.trim();
     const music = await Music.findById(id).populate('artist', 'name');
-    if (!music) {
-      res.status(404).json({ message: 'Music not found' });
-      return;
-    }
+    if (!music) return res.status(404).json({ message: 'Music not found' });
 
-    // Remove any leading slash from fileUrl so that path.join works correctly
     const relativeFilePath = music.fileUrl.replace(/^\/+/, '');
     const filePath = path.join(__dirname, '..', relativeFilePath);
-    console.log("Streaming file from:", filePath);
 
-    // Check that the file exists
-    if (!fs.existsSync(filePath)) {
-      res.status(404).json({ message: 'File not found on server' });
-      return;
-    }
+    if (!fs.existsSync(filePath)) return res.status(404).json({ message: 'File not found on server' });
 
     const stat = fs.statSync(filePath);
     const fileSize = stat.size;
     const range = req.headers.range;
-
-    // Dynamically determine the content type using mime-types
     const contentType = mime.lookup(filePath) || 'application/octet-stream';
-    console.log("Using Content-Type:", contentType);
 
-    // Set required CORS headers
     res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
 
     if (range) {
-      const parts = range.replace(/bytes=/, "").split("-");
+      const parts = range.replace(/bytes=/, '').split('-');
       const start = parseInt(parts[0], 10);
       const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
       const chunkSize = (end - start) + 1;
       const fileStream = fs.createReadStream(filePath, { start, end });
-      const head = {
+
+      res.writeHead(206, {
         'Content-Range': `bytes ${start}-${end}/${fileSize}`,
         'Accept-Ranges': 'bytes',
         'Content-Length': chunkSize,
         'Content-Type': contentType
-      };
-      res.writeHead(206, head);
+      });
+
       fileStream.pipe(res);
     } else {
-      const head = {
+      res.writeHead(200, {
         'Content-Length': fileSize,
         'Content-Type': contentType
-      };
-      res.writeHead(200, head);
+      });
       fs.createReadStream(filePath).pipe(res);
     }
   } catch (error) {
@@ -120,7 +125,8 @@ exports.streamMusic = async (req, res, next) => {
   }
 };
 
-exports.incrementPlayCount = async (req, res, next) => {
+// 🔁 Increment play count
+export const incrementPlayCount = async (req, res, next) => {
   try {
     const { id } = req.params;
     const updated = await Music.findByIdAndUpdate(
@@ -128,9 +134,7 @@ exports.incrementPlayCount = async (req, res, next) => {
       { $inc: { playCount: 1 } },
       { new: true }
     );
-    if (!updated) {
-      return res.status(404).json({ message: "Music not found" });
-    }
+    if (!updated) return res.status(404).json({ message: "Music not found" });
     res.status(200).json({ message: "Play count incremented", playCount: updated.playCount });
   } catch (error) {
     console.error("Error incrementing play count:", error);

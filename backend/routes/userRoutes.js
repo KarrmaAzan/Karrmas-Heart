@@ -1,10 +1,10 @@
-// routes/userRoutes.js
-const express = require('express');
+import express from 'express';
+import { protect } from '../middleware/authMiddleware.js';
+import { getProfile, updatePushToken } from '../controllers/userController.js';
+
 const router = express.Router();
-const { protect } = require('../middleware/authMiddleware');
-const { getProfile, updatePushToken } = require('../controllers/userController');
 
 router.get('/profile', protect, getProfile);
 router.put('/push-token', protect, updatePushToken);
 
-module.exports = router;
+export default router;

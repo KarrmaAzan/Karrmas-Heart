@@ -1,8 +1,8 @@
-// routes/analyticsRoutes.js
-const express = require('express');
+import express from 'express';
+import { trackPlayback } from '../controllers/analyticController.js';
+
 const router = express.Router();
-const { trackPlayback } = require('../controllers/analyticController');
 
 router.put('/track/:id', trackPlayback);
 
-module.exports = router;
+export default router;

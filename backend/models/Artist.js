@@ -1,10 +1,11 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const artistSchema = new mongoose.Schema({
   name: { type: String, required: true, unique: true },
   bio: { type: String, required: true },
-  image: { type: String, default: "/uploads/default-artist.jpg" }, // Artist Image
+  image: { type: String, default: "/uploads/default-artist.jpg" },
   createdAt: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model('Artist', artistSchema);
+const Artist = mongoose.model('Artist', artistSchema);
+export default Artist;

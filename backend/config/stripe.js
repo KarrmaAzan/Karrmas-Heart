@@ -1,3 +1,6 @@
 // config/stripe.js
-const Stripe = require('stripe');
-module.exports = new Stripe(process.env.STRIPE_SECRET_KEY);
+import Stripe from 'stripe';
+import { STRIPE_SECRET_KEY } from './env.js'; // load env properly
+
+const stripe = new Stripe(STRIPE_SECRET_KEY);
+export default stripe;
