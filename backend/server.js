@@ -44,7 +44,7 @@ app.use(rateLimit({
   max: 10000
 }));
 
-// ✅ CORS (open for now)
+// ✅ CORS (open for now; adjust later for Vercel domain)
 app.use(cors({
   origin: true,
   credentials: true,
@@ -76,10 +76,8 @@ const registerRoutes = () => {
   });
 };
 
-// ✅ Dev: Register routes immediately
-if (process.env.NODE_ENV !== "production") {
-  registerRoutes();
-}
+// ✅ Register all routes in all environments
+registerRoutes();
 
 // ✅ API 404 fallback
 app.use((req, res, next) => {
@@ -89,31 +87,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// ✅ PRODUCTION SSR SETUP
-if (process.env.NODE_ENV === "production") {
-  const next = (await import("next")).default;
-
-  // ✅ Point to frontend one level up
-  const nextApp = next({ dev: false, dir: path.join(__dirname, "../frontend") });
-  const handle = nextApp.getRequestHandler();
-
-  await nextApp.prepare();
-
-  // ✅ Register routes in prod too
-  registerRoutes();
-
-  app.use(express.static(path.join(__dirname, "../frontend/.next")));
-  app.use(express.static(path.join(__dirname, "../frontend/public")));
-
-  app.all("*", (req, res) => handle(req, res));
-
-  const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => {
-    console.log(`🚀 Server + Next.js running in production on port ${PORT}`);
-  });
-} else {
-  const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => {
-    console.log(`🚀 Backend running in dev mode on port ${PORT}`);
-  });
-}
+// ✅ Start backend server (no SSR)
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`🚀 Backend API running on port ${PORT}`);
+});

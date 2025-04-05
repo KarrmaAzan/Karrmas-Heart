@@ -1,14 +1,17 @@
 import axios from 'axios';
 
 const isServer = typeof window === 'undefined';
+
+// ✅ Check if running on localhost
 const isLocalhost = () => {
   if (isServer) return true;
   return typeof window !== 'undefined' && window.location.hostname === 'localhost';
 };
 
+// ✅ Environment-aware baseURL
 const baseURL = isLocalhost()
   ? 'http://localhost:5000/api/v1'
-  : '/api/v1'; // Served from backend
+  : process.env.NEXT_PUBLIC_API_URL || '/api/v1'; // fallback for SSR or proxying
 
 const api = axios.create({
   baseURL,
