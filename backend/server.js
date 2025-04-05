@@ -64,15 +64,26 @@ import analyticRoutes from "./routes/analyticRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import artistRoutes from "./routes/artistRoutes.js";
 
-app.use("/api/v1/auth", authRoutes);
-app.use("/api/v1/music", musicRoutes);
-app.use("/api/v1/playlists", playlistRoutes);
-app.use("/api/v1/search", searchRoutes);
-app.use("/api/v1/analytics", analyticRoutes);
-// app.use("/api/v1/notifications", notificationRoutes);
-app.use("/api/v1/payment", paymentRoutes);
-console.log("✅ Registering /api/v1/artist");
-app.use("/api/v1/artist", artistRoutes);
+// ✅ Register routes function (used in all envs)
+const registerRoutes = () => {
+  app.use("/api/v1/auth", authRoutes);
+  app.use("/api/v1/music", musicRoutes);
+  app.use("/api/v1/playlists", playlistRoutes);
+  app.use("/api/v1/search", searchRoutes);
+  app.use("/api/v1/analytics", analyticRoutes);
+  // app.use("/api/v1/notifications", notificationRoutes);
+  app.use("/api/v1/payment", paymentRoutes);
+  console.log("✅ Registering /api/v1/artist");
+  app.use("/api/v1/artist", artistRoutes);
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "UP" });
+  });
+};
+
+// Register routes for dev
+if (process.env.NODE_ENV !== "production") {
+  registerRoutes();
+}
 
 // API 404 fallback
 app.use((req, res, next) => {
@@ -89,6 +100,9 @@ if (process.env.NODE_ENV === "production") {
   const handle = nextApp.getRequestHandler();
 
   await nextApp.prepare();
+
+  // ✅ Register API routes here too
+  registerRoutes();
 
   app.use(express.static(path.join(__dirname, "../frontend/.next")));
   app.use(express.static(path.join(__dirname, "../frontend/public")));
