@@ -13,10 +13,19 @@ const BASE_URL = process.env.NODE_ENV === "production"
 
 export const registerArtist = async (req, res) => {
   try {
-    const { name, bio } = req.body;
-    const image = req.file ? `/uploads/${req.file.filename}` : "/uploads/default-artist.jpg";
+    const { name, bio, image } = req.body;
 
-    const newArtist = new Artist({ name, bio, image });
+    // Priority:
+    // 1. Uploaded image (req.file)
+    // 2. Provided Cloudinary URL
+    // 3. Fallback default image
+    const finalImage = req.file
+      ? `/uploads/${req.file.filename}`
+      : image?.startsWith("http")
+        ? image
+        : "/uploads/default-artist.jpg";
+
+    const newArtist = new Artist({ name, bio, image: finalImage });
     await newArtist.save();
 
     res.status(201).json({ message: "Artist registered", artist: newArtist });
