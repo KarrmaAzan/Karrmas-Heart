@@ -10,8 +10,8 @@ const isLocalhost = () => {
 
 // ✅ Environment-aware baseURL
 const baseURL = isLocalhost()
-  ? 'http://localhost:5000/api/v1'
-  : process.env.NEXT_PUBLIC_API_URL || '/api/v1'; // fallback for SSR or proxying
+  ? 'http://localhost:5000/api/v1' // ⬅️ Dev (localhost)
+  : process.env.NEXT_PUBLIC_API_URL || 'https://karrmas-heart.onrender.com/api/v1'; // ⬅️ Prod fallback
 
 const api = axios.create({
   baseURL,
