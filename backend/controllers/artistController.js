@@ -15,17 +15,12 @@ export const registerArtist = async (req, res) => {
   try {
     const { name, bio, image } = req.body;
 
-    // Priority:
-    // 1. Uploaded image (req.file)
-    // 2. Provided Cloudinary URL
-    // 3. Fallback default image
-    const finalImage = req.file
-      ? `/uploads/${req.file.filename}`
-      : image?.startsWith("http")
-        ? image
-        : "/uploads/default-artist.jpg";
+    // Use Cloudinary URL if provided, otherwise fallback to default
+    const imageUrl = image?.startsWith("http")
+      ? image
+      : "/uploads/default-artist.jpg";
 
-    const newArtist = new Artist({ name, bio, image: finalImage });
+    const newArtist = new Artist({ name, bio, image: imageUrl });
     await newArtist.save();
 
     res.status(201).json({ message: "Artist registered", artist: newArtist });
@@ -34,6 +29,7 @@ export const registerArtist = async (req, res) => {
     res.status(500).json({ message: "Failed to register artist", error: error.message });
   }
 };
+
 
 
 // GET Artist Page (for Artist.jsx)
