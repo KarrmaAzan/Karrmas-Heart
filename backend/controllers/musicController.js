@@ -6,7 +6,6 @@ import mime from 'mime-types';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 
-// 📦 Fix __dirname for ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -20,7 +19,6 @@ const storage = multer.diskStorage({
   }
 });
 
-// 🔍 File type filtering
 const fileFilter = (req, file, cb) => {
   const allowedTypes = ['audio/mpeg', 'audio/mp4', 'audio/x-m4a'];
   if (allowedTypes.includes(file.mimetype)) {
@@ -30,16 +28,13 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-// 📤 Export multer middleware for routes
 export const uploadMiddleware = multer({ storage, fileFilter }).single('music');
 
 // 🔊 Upload a new song (linked to artist)
 export const uploadSongWithArtist = async (req, res) => {
   try {
     const { title, duration, description } = req.body;
-    let fileUrl = req.file
-      ? `/uploads/${req.file.filename}`
-      : req.body.fileUrl;
+    const fileUrl = req.file ? `/uploads/${req.file.filename}` : req.body.fileUrl;
 
     if (!fileUrl) {
       return res.status(400).json({ message: 'No file uploaded or fileUrl provided' });
@@ -77,24 +72,31 @@ export const getAllMusic = async (req, res, next) => {
   }
 };
 
-// 📡 Stream music with range support
+// 📡 Stream music with range support and proper CORS
 export const streamMusic = async (req, res, next) => {
   try {
     const id = req.params.id.trim();
     const music = await Music.findById(id).populate('artist', 'name');
     if (!music) return res.status(404).json({ message: 'Music not found' });
 
-    const relativeFilePath = music.fileUrl.replace(/^\/+/, '');
-    const filePath = path.join(__dirname, '..', relativeFilePath);
-
+    const filePath = path.resolve('uploads', path.basename(music.fileUrl));
     if (!fs.existsSync(filePath)) return res.status(404).json({ message: 'File not found on server' });
 
     const stat = fs.statSync(filePath);
     const fileSize = stat.size;
     const range = req.headers.range;
-    const contentType = mime.lookup(filePath) || 'application/octet-stream';
+    const contentType = mime.lookup(filePath) || 'audio/mpeg';
 
-    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
+    const origin = req.headers.origin || '';
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'https://karrmas-heart.vercel.app'
+    ];
+
+    if (allowedOrigins.includes(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
 
     if (range) {

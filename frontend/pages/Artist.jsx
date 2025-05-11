@@ -202,11 +202,14 @@ export default function ArtistPage() {
             }}
             onClick={() => router.push(`/albums/${album._id}`)}
           >
-            <img
-              src={album.coverImage}
-              alt={album.title}
-              style={{ width: '100%', height: 180, objectFit: 'cover' }}
-            />
+          <img
+  src={album.coverImage}
+  alt={album.title}
+  style={{ width: '100%', height: 180, objectFit: 'cover' }}
+  onError={(e) => { e.target.src = '/iam.jpeg'; }} // Optional fallback image
+  crossOrigin="anonymous" // Prevent CORS errors
+/>
+
             <Box p={1}>
               <Typography variant="body1" color="white" fontWeight="bold">
                 {album.title}
