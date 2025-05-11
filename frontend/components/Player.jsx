@@ -128,13 +128,20 @@ export default function Player() {
   const audioRef = useRef(null);
   const isMobile = useMediaQuery("(max-width: 768px)");
 
-  const streamBaseUrl = typeof window !== "undefined" && window.location.hostname.includes("localhost")
-  ? "http://localhost:5000"
-  : "https://karrmas-heart.onrender.com"; // ✅ your live backend
+  const streamBaseUrl =
+    typeof window !== "undefined" && window.location.hostname.includes("localhost")
+      ? "http://localhost:5000"
+      : "https://karrmas-heart.onrender.com";
 
   useEffect(() => {
     if (currentTrack && audioRef.current) {
-      audioRef.current.src = `${streamBaseUrl}/api/v1/music/stream/${currentTrack._id}`;
+      const fileUrl = currentTrack.fileUrl;
+      const isCloudinary = fileUrl?.startsWith("http");
+
+      audioRef.current.src = isCloudinary
+        ? fileUrl
+        : `${streamBaseUrl}/api/v1/music/stream/${currentTrack._id}`;
+
       audioRef.current.load();
       audioRef.current
         .play()

@@ -5,11 +5,20 @@ import fs from 'fs';
 import mime from 'mime-types';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { v2 as cloudinary } from 'cloudinary';
+import 'dotenv/config';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// 🔧 Multer storage config
+// 🌩️ Cloudinary config
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// 🧱 Multer for local temp storage before upload
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, 'uploads/');
@@ -34,11 +43,21 @@ export const uploadMiddleware = multer({ storage, fileFilter }).single('music');
 export const uploadSongWithArtist = async (req, res) => {
   try {
     const { title, duration, description } = req.body;
-    const fileUrl = req.file ? `/uploads/${req.file.filename}` : req.body.fileUrl;
 
-    if (!fileUrl) {
-      return res.status(400).json({ message: 'No file uploaded or fileUrl provided' });
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
     }
+
+    // Upload to Cloudinary
+    const uploadResult = await cloudinary.uploader.upload(req.file.path, {
+      resource_type: 'video', // For audio files
+      folder: 'music'
+    });
+
+    // Delete local temp file
+    fs.unlinkSync(req.file.path);
+
+    const fileUrl = uploadResult.secure_url;
 
     const { default: Artist } = await import('../models/Artist.js');
     const artist = await Artist.findOne();
@@ -78,6 +97,11 @@ export const streamMusic = async (req, res, next) => {
     const id = req.params.id.trim();
     const music = await Music.findById(id).populate('artist', 'name');
     if (!music) return res.status(404).json({ message: 'Music not found' });
+
+    // For Cloudinary audio, redirect directly
+    if (music.fileUrl.includes('cloudinary.com')) {
+      return res.redirect(music.fileUrl);
+    }
 
     const filePath = path.resolve('uploads', path.basename(music.fileUrl));
     if (!fs.existsSync(filePath)) return res.status(404).json({ message: 'File not found on server' });
