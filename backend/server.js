@@ -2,6 +2,7 @@
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,7 +25,14 @@ import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 import cors from "cors";
 
-// Connect MongoDB
+// ✅ Ensure uploads directory exists
+const uploadsPath = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadsPath)) {
+  fs.mkdirSync(uploadsPath);
+  console.log("📁 Created missing 'uploads/' directory.");
+}
+
+// ✅ Connect MongoDB
 import connectDB from "./config/db.js";
 connectDB();
 
@@ -65,7 +73,7 @@ app.use(cors({
 }));
 
 // ✅ Static file serving
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/uploads", express.static(uploadsPath));
 
 // ✅ Routes
 import authRoutes from "./routes/authRoutes.js";
