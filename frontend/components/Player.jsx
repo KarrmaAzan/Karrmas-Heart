@@ -128,7 +128,9 @@ export default function Player() {
   const audioRef = useRef(null);
   const isMobile = useMediaQuery("(max-width: 768px)");
 
-  const streamBaseUrl = api.defaults.baseURL.replace("/api/v1", "");
+  const streamBaseUrl = typeof window !== "undefined" && window.location.hostname.includes("localhost")
+  ? "http://localhost:5000"
+  : "https://karrmas-heart.onrender.com"; // ✅ your live backend
 
   useEffect(() => {
     if (currentTrack && audioRef.current) {

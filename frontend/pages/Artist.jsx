@@ -12,10 +12,11 @@ import { useEffect, useState, useContext } from "react";
 import api from "../utils/api";
 import styled from "styled-components";
 import Image from "next/image";
+import { useRouter } from "next/router";
 import { PlayerContext } from "../context/PlayerContext";
-import { AuthContext } from "../context/AuthContext"; // ✅ AuthContext added
+import { AuthContext } from "../context/AuthContext";
 
-// 🎨 Styled Components for Artist Page
+// 🎨 Styled Components
 
 const ArtistHeader = styled(Box)`
   display: flex;
@@ -82,11 +83,13 @@ const ExpandButton = styled(Button)`
 
 export default function ArtistPage() {
   const { setCurrentTrack, setAllSongs } = useContext(PlayerContext);
-  const { user } = useContext(AuthContext); // ✅ Grab current user if needed
+  const { user } = useContext(AuthContext);
+  const router = useRouter();
 
   const [artist, setArtist] = useState(null);
   const [topSongs, setTopSongs] = useState([]);
   const [allSongsLocal, setLocalAllSongs] = useState([]);
+  const [albums, setAlbums] = useState([]); // ✅ Added albums state
   const [showFullDiscography, setShowFullDiscography] = useState(false);
 
   const bannerImage = "/Soul-Dweller.JPG";
@@ -95,7 +98,7 @@ export default function ArtistPage() {
   useEffect(() => {
     const fetchArtistData = async () => {
       try {
-        const response = await api.get('/artist'); // ✅ only this!
+        const response = await api.get('/artist');
         const updatedArtist = {
           ...response.data.artist,
           image: response.data.artist.image?.trim()
@@ -111,7 +114,17 @@ export default function ArtistPage() {
       }
     };
 
+    const fetchAlbums = async () => {
+      try {
+        const response = await api.get('/albums');
+        setAlbums(response.data);
+      } catch (err) {
+        console.error("Error fetching albums:", err);
+      }
+    };
+
     fetchArtistData();
+    fetchAlbums();
   }, [setAllSongs]);
 
   return (
@@ -174,30 +187,37 @@ export default function ArtistPage() {
         </ExpandButton>
       )}
 
-<SectionTitle>Albums</SectionTitle>
-<Box display="flex" flexWrap="wrap" gap={2}>
-  {albums.map((album) => (
-    <Box
-      key={album._id}
-      sx={{
-        width: 180,
-        cursor: 'pointer',
-        backgroundColor: '#222',
-        borderRadius: 2,
-        overflow: 'hidden',
-        boxShadow: '0px 0px 10px rgba(0,0,0,0.4)'
-      }}
-      onClick={() => router.push(`/albums/${album._id}`)}
-    >
-      <img src={album.coverImage} alt={album.title} style={{ width: '100%', height: 180, objectFit: 'cover' }} />
-      <Box p={1}>
-        <Typography variant="body1" color="white" fontWeight="bold">{album.title}</Typography>
-        <Typography variant="body2" color="gray">{new Date(album.releaseDate).toLocaleDateString()}</Typography>
+      <SectionTitle>Albums</SectionTitle>
+      <Box display="flex" flexWrap="wrap" gap={2}>
+        {albums.map((album) => (
+          <Box
+            key={album._id}
+            sx={{
+              width: 180,
+              cursor: 'pointer',
+              backgroundColor: '#222',
+              borderRadius: 2,
+              overflow: 'hidden',
+              boxShadow: '0px 0px 10px rgba(0,0,0,0.4)'
+            }}
+            onClick={() => router.push(`/albums/${album._id}`)}
+          >
+            <img
+              src={album.coverImage}
+              alt={album.title}
+              style={{ width: '100%', height: 180, objectFit: 'cover' }}
+            />
+            <Box p={1}>
+              <Typography variant="body1" color="white" fontWeight="bold">
+                {album.title}
+              </Typography>
+              <Typography variant="body2" color="gray">
+                {new Date(album.releaseDate).toLocaleDateString()}
+              </Typography>
+            </Box>
+          </Box>
+        ))}
       </Box>
-    </Box>
-  ))}
-</Box>
-
 
       <SectionTitle>About</SectionTitle>
       <Typography color="gray">{artist?.bio || "No bio available."}</Typography>
