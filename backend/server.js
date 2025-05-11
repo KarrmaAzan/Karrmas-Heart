@@ -73,10 +73,13 @@ import searchRoutes from "./routes/searchRoutes.js";
 import analyticRoutes from "./routes/analyticRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import artistRoutes from "./routes/artistRoutes.js";
+import albumRoutes from "./routes/albumRoutes.js";
+
 
 const registerRoutes = () => {
   app.use("/api/v1/auth", authRoutes);
   app.use("/api/v1/music", musicRoutes);
+  app.use("/api/v1/albums", albumRoutes);
   app.use("/api/v1/playlists", playlistRoutes);
   app.use("/api/v1/search", searchRoutes);
   app.use("/api/v1/analytics", analyticRoutes);
