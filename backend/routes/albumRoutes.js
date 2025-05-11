@@ -1,5 +1,5 @@
 import express from 'express';
-import { createAlbum, getAlbums } from '../controllers/albumController.js';
+import { createAlbum, getAlbums, getAlbumById } from '../controllers/albumController.js';
 import { protect, admin } from '../middleware/authMiddleware.js';
 import multer from 'multer';
 
@@ -16,7 +16,7 @@ const upload = multer({ storage });
 
 const router = express.Router();
 
-// ✅ Allow both coverImage and tracks[]
+// Upload new album
 router.post(
   '/',
   protect,
@@ -28,6 +28,10 @@ router.post(
   createAlbum
 );
 
+// Get all albums
 router.get('/', getAlbums);
+
+// ✅ NEW: Get album by ID
+router.get('/:id', getAlbumById);
 
 export default router;

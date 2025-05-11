@@ -65,3 +65,23 @@ export const getAlbums = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
+
+export const getAlbumById = async (req, res) => {
+  try {
+    const album = await Album.findById(req.params.id)
+      .populate({
+        path: 'songs',
+        populate: { path: 'artist', select: 'name' }
+      });
+
+    if (!album) {
+      return res.status(404).json({ message: 'Album not found' });
+    }
+
+    res.json(album);
+  } catch (err) {
+    console.error('Album fetch error:', err.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
