@@ -1,7 +1,8 @@
 import Album from '../models/Album.js';
 import Music from '../models/Music.js';
-import Artist from '../models/Artist.js'; // make sure this path is correct
+import Artist from '../models/Artist.js'; // ✅ Required to validate artist
 
+// ✅ Create Album
 export const createAlbum = async (req, res) => {
   try {
     const { title, description, releaseDate, artistId } = req.body;
@@ -48,5 +49,19 @@ export const createAlbum = async (req, res) => {
   } catch (error) {
     console.error("Error creating album:", error);
     res.status(500).json({ message: "Internal Server Error", error: error.message });
+  }
+};
+
+// ✅ Add this missing export!
+export const getAlbums = async (req, res) => {
+  try {
+    const albums = await Album.find()
+      .populate('songs')
+      .sort({ releaseDate: -1 });
+
+    res.status(200).json(albums);
+  } catch (error) {
+    console.error("Error fetching albums:", error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 };
