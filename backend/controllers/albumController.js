@@ -1,4 +1,4 @@
-import Album from '../models/Album.js';
+import Album from '../models/Albums.js';
 import Music from '../models/Music.js';
 
 export const createAlbum = async (req, res) => {
