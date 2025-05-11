@@ -174,6 +174,31 @@ export default function ArtistPage() {
         </ExpandButton>
       )}
 
+<SectionTitle>Albums</SectionTitle>
+<Box display="flex" flexWrap="wrap" gap={2}>
+  {albums.map((album) => (
+    <Box
+      key={album._id}
+      sx={{
+        width: 180,
+        cursor: 'pointer',
+        backgroundColor: '#222',
+        borderRadius: 2,
+        overflow: 'hidden',
+        boxShadow: '0px 0px 10px rgba(0,0,0,0.4)'
+      }}
+      onClick={() => router.push(`/albums/${album._id}`)}
+    >
+      <img src={album.coverImage} alt={album.title} style={{ width: '100%', height: 180, objectFit: 'cover' }} />
+      <Box p={1}>
+        <Typography variant="body1" color="white" fontWeight="bold">{album.title}</Typography>
+        <Typography variant="body2" color="gray">{new Date(album.releaseDate).toLocaleDateString()}</Typography>
+      </Box>
+    </Box>
+  ))}
+</Box>
+
+
       <SectionTitle>About</SectionTitle>
       <Typography color="gray">{artist?.bio || "No bio available."}</Typography>
     </Container>

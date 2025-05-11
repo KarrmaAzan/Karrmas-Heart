@@ -1,22 +1,36 @@
-import { useState, useRef, useEffect, useContext } from 'react';
-import { Box, IconButton, Slider, Typography, useMediaQuery } from '@mui/material';
-import { PlayArrow, Pause, SkipNext, SkipPrevious, Shuffle, Repeat, RepeatOne } from '@mui/icons-material';
-import VolumeUpIcon from '@mui/icons-material/VolumeUp';
-import styled from 'styled-components';
-import axios from 'axios';
-import { PlayerContext } from '../context/PlayerContext';
+import { useState, useRef, useEffect, useContext } from "react";
+import {
+  Box,
+  IconButton,
+  Slider,
+  Typography,
+  useMediaQuery,
+} from "@mui/material";
+import {
+  PlayArrow,
+  Pause,
+  SkipNext,
+  SkipPrevious,
+  Shuffle,
+  Repeat,
+  RepeatOne,
+} from "@mui/icons-material";
+import VolumeUpIcon from "@mui/icons-material/VolumeUp";
+import styled from "styled-components";
+import { PlayerContext } from "../context/PlayerContext";
+import api from "../utils/api";
 
 const PlayerContainer = styled(Box)`
   position: fixed;
-  bottom: ${(props) => (props.$isMobile ? '80px' : '0')};
+  bottom: ${(props) => (props.$isMobile ? "80px" : "0")};
   left: 0;
   width: 100vw;
-  height: ${(props) => (props.$isMobile ? '60px' : '100px')};
-  background-color: #1E1E1E;
+  height: ${(props) => (props.$isMobile ? "60px" : "100px")};
+  background-color: #1e1e1e;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: ${(props) => (props.$isMobile ? '10px 15px' : '10px 20px')};
+  padding: ${(props) => (props.$isMobile ? "10px 15px" : "10px 20px")};
   box-sizing: border-box;
   overflow: hidden;
   position: fixed;
@@ -102,9 +116,8 @@ const DurationBar = styled(Slider)`
 `;
 
 export default function Player() {
-  // Use the global context instead of props
   const { currentTrack, setCurrentTrack, allSongs } = useContext(PlayerContext);
-  
+
   const [playing, setPlaying] = useState(false);
   const [volume, setVolume] = useState(50);
   const [currentTime, setCurrentTime] = useState(0);
@@ -113,27 +126,28 @@ export default function Player() {
   const [shuffling, setShuffling] = useState(false);
   const [hasCounted, setHasCounted] = useState(false);
   const audioRef = useRef(null);
-  const isMobile = useMediaQuery('(max-width: 768px)');
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
-  // When currentTrack changes, update the audio source and reset play count flag.
+  const streamBaseUrl = api.defaults.baseURL.replace("/api/v1", "");
+
   useEffect(() => {
     if (currentTrack && audioRef.current) {
-      audioRef.current.src = `http://localhost:5000/api/v1/music/stream/${currentTrack._id}`;
+      audioRef.current.src = `${streamBaseUrl}/api/v1/music/stream/${currentTrack._id}`;
       audioRef.current.load();
-      audioRef.current.play().catch(err => console.error("Playback failed:", err));
+      audioRef.current
+        .play()
+        .catch((err) => console.error("Playback failed:", err));
       setPlaying(true);
       setHasCounted(false);
     }
   }, [currentTrack]);
 
-  // Update volume when it changes.
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = volume / 100;
     }
   }, [volume]);
 
-  // Update time display, progress bar, and trigger play count increment.
   useEffect(() => {
     const audioEl = audioRef.current;
     if (!audioEl) return;
@@ -145,25 +159,18 @@ export default function Player() {
         setHasCounted(true);
       }
     };
-    audioEl.addEventListener('timeupdate', updateProgress);
-    audioEl.addEventListener('loadedmetadata', updateProgress);
+    audioEl.addEventListener("timeupdate", updateProgress);
+    audioEl.addEventListener("loadedmetadata", updateProgress);
     return () => {
-      audioEl.removeEventListener('timeupdate', updateProgress);
-      audioEl.removeEventListener('loadedmetadata', updateProgress);
+      audioEl.removeEventListener("timeupdate", updateProgress);
+      audioEl.removeEventListener("loadedmetadata", updateProgress);
     };
   }, [currentTrack, hasCounted]);
 
-  // Function to call the API to increment play count.
   const incrementPlayCount = async () => {
     try {
       if (!currentTrack?._id) return;
-      const token = localStorage.getItem('token');
-      console.log("Token used for play count:", token);
-      await axios.patch(
-        `http://localhost:5000/api/v1/music/increment-playcount/${currentTrack._id}`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await api.patch(`/music/increment-playcount/${currentTrack._id}`);
       console.log("Play count incremented for track:", currentTrack._id);
     } catch (error) {
       if (error.response) {
@@ -174,7 +181,6 @@ export default function Player() {
     }
   };
 
-  // Convert seconds to mm:ss
   const formatTime = (time) => {
     if (isNaN(time) || time < 0) return "0:00";
     const minutes = Math.floor(time / 60);
@@ -182,7 +188,6 @@ export default function Player() {
     return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
   };
 
-  // Toggle play/pause
   const togglePlay = () => {
     if (!currentTrack) return;
     if (playing) {
@@ -193,28 +198,28 @@ export default function Player() {
     setPlaying(!playing);
   };
 
-  // Play next song
   const playNext = () => {
     if (!allSongs || allSongs.length === 0) return;
-    const currentIndex = allSongs.findIndex((track) => track._id === currentTrack._id);
+    const currentIndex = allSongs.findIndex(
+      (track) => track._id === currentTrack._id
+    );
     const nextIndex = (currentIndex + 1) % allSongs.length;
     setCurrentTrack(allSongs[nextIndex]);
   };
 
-  // Play previous song
   const playPrevious = () => {
     if (!allSongs || allSongs.length === 0) return;
-    const currentIndex = allSongs.findIndex((track) => track._id === currentTrack._id);
+    const currentIndex = allSongs.findIndex(
+      (track) => track._id === currentTrack._id
+    );
     const prevIndex = (currentIndex - 1 + allSongs.length) % allSongs.length;
     setCurrentTrack(allSongs[prevIndex]);
   };
 
-  // Toggle repeat (off -> repeat all -> repeat one)
   const toggleRepeat = () => {
     setRepeatMode((prev) => (prev + 1) % 3);
   };
 
-  // Toggle shuffle
   const toggleShuffle = () => {
     setShuffling(!shuffling);
   };
@@ -225,9 +230,16 @@ export default function Player() {
 
       {isMobile ? (
         <>
-          <Box display="flex" alignItems="center" justifyContent="space-between" width="100%">
+          <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="space-between"
+            width="100%"
+          >
             <Box>
-              {currentTrack && <AlbumCover src={currentTrack.albumCover} alt="Album" />}
+              {currentTrack && (
+                <AlbumCover src={currentTrack.albumCover} alt="Album" />
+              )}
             </Box>
             <Box flex={1} display="flex" justifyContent="center">
               <Typography variant="body1" color="white">
@@ -236,7 +248,11 @@ export default function Player() {
             </Box>
             <Box>
               <IconButton onClick={togglePlay} color="secondary">
-                {playing ? <Pause fontSize="large" /> : <PlayArrow fontSize="large" />}
+                {playing ? (
+                  <Pause fontSize="large" />
+                ) : (
+                  <PlayArrow fontSize="large" />
+                )}
               </IconButton>
             </Box>
           </Box>
@@ -255,54 +271,72 @@ export default function Player() {
           <TopSection>
             <LeftSection>
               <SongDetails>
-                {currentTrack && <AlbumCover src={currentTrack.albumCover} alt="Album" />}
+                {currentTrack && (
+                  <AlbumCover src={currentTrack.albumCover} alt="Album" />
+                )}
                 <Box>
                   <Typography variant="body1" color="white">
                     {currentTrack ? currentTrack.title : "No Song Playing"}
                   </Typography>
                   <Typography variant="body2" color="gray">
-                    {currentTrack && currentTrack.artist && currentTrack.artist.name
-                      ? currentTrack.artist.name
-                      : "Artist Unknown"}
+                    {currentTrack?.artist?.name || "Artist Unknown"}
                   </Typography>
                 </Box>
               </SongDetails>
             </LeftSection>
-  
+
             <CenterSection>
               <Controls>
-                <IconButton onClick={toggleShuffle} color={shuffling ? 'secondary' : 'default'}>
+                <IconButton
+                  onClick={toggleShuffle}
+                  color={shuffling ? "secondary" : "default"}
+                >
                   <Shuffle fontSize="large" />
                 </IconButton>
                 <IconButton onClick={playPrevious}>
                   <SkipPrevious fontSize="large" />
                 </IconButton>
                 <IconButton onClick={togglePlay} color="secondary">
-                  {playing ? <Pause fontSize="large" /> : <PlayArrow fontSize="large" />}
+                  {playing ? (
+                    <Pause fontSize="large" />
+                  ) : (
+                    <PlayArrow fontSize="large" />
+                  )}
                 </IconButton>
                 <IconButton onClick={playNext}>
                   <SkipNext fontSize="large" />
                 </IconButton>
-                <IconButton onClick={toggleRepeat} color={repeatMode !== 0 ? 'secondary' : 'default'}>
-                  {repeatMode === 1 ? <RepeatOne fontSize="large" /> : <Repeat fontSize="large" />}
+                <IconButton
+                  onClick={toggleRepeat}
+                  color={repeatMode !== 0 ? "secondary" : "default"}
+                >
+                  {repeatMode === 1 ? (
+                    <RepeatOne fontSize="large" />
+                  ) : (
+                    <Repeat fontSize="large" />
+                  )}
                 </IconButton>
               </Controls>
             </CenterSection>
-  
+
             <RightSection>
               <Box display="flex" alignItems="center">
-                <VolumeUpIcon color="secondary" sx={{ marginRight: '8px' }} />
+                <VolumeUpIcon color="secondary" sx={{ marginRight: "8px" }} />
                 <Slider
                   value={volume}
                   onChange={(e, v) => setVolume(v)}
-                  sx={{ width: 100, color: 'secondary.main', right: 5 }}
+                  sx={{ width: 100, color: "secondary.main", right: 5 }}
                 />
               </Box>
             </RightSection>
           </TopSection>
-  
+
           <Box width="100%" display="flex" alignItems="center">
-            <Typography variant="body2" color="gray" sx={{ marginLeft: 2, position: 'relative', bottom: '6px' }}>
+            <Typography
+              variant="body2"
+              color="gray"
+              sx={{ marginLeft: 2, position: "relative", bottom: "6px" }}
+            >
               {formatTime(currentTime)}
             </Typography>
             <DurationBar
@@ -313,7 +347,11 @@ export default function Player() {
                 audioRef.current.currentTime = v;
               }}
             />
-            <Typography variant="body2" color="gray" sx={{ marginRight: 2, position: 'relative', bottom: '6px' }}>
+            <Typography
+              variant="body2"
+              color="gray"
+              sx={{ marginRight: 2, position: "relative", bottom: "6px" }}
+            >
               {formatTime(duration)}
             </Typography>
           </Box>
