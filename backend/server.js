@@ -30,6 +30,9 @@ connectDB();
 
 const app = express();
 
+// ✅ Trust proxy (IMPORTANT for CORS + rate-limiter on Render)
+app.set('trust proxy', 1);
+
 // ✅ Security & parsing middleware
 app.use(helmet());
 app.use(xss());
@@ -51,8 +54,7 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps, curl, Postman)
-    if (!origin) return callback(null, true);
+    if (!origin) return callback(null, true); // Allow tools like Postman
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     } else {
@@ -75,7 +77,6 @@ import paymentRoutes from "./routes/paymentRoutes.js";
 import artistRoutes from "./routes/artistRoutes.js";
 import albumRoutes from "./routes/albumRoutes.js";
 
-
 const registerRoutes = () => {
   app.use("/api/v1/auth", authRoutes);
   app.use("/api/v1/music", musicRoutes);
@@ -86,12 +87,14 @@ const registerRoutes = () => {
   app.use("/api/v1/payment", paymentRoutes);
   console.log("✅ Registering /api/v1/artist");
   app.use("/api/v1/artist", artistRoutes);
+
+  // ✅ Health check
   app.get("/api/health", (req, res) => {
     res.json({ status: "UP" });
   });
 };
 
-// ✅ Register all routes in all environments
+// ✅ Register all routes
 registerRoutes();
 
 // ✅ API 404 fallback
@@ -102,7 +105,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// ✅ Start backend server (no SSR)
+// ✅ Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`🚀 Backend API running on port ${PORT}`);
