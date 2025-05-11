@@ -133,23 +133,24 @@ export default function Player() {
       ? "http://localhost:5000"
       : "https://karrmas-heart.onrender.com";
 
-  useEffect(() => {
-    if (currentTrack && audioRef.current) {
-      const fileUrl = currentTrack.fileUrl;
-      const isCloudinary = fileUrl?.startsWith("http");
-
-      audioRef.current.src = isCloudinary
-        ? fileUrl
-        : `${streamBaseUrl}/api/v1/music/stream/${currentTrack._id}`;
-
-      audioRef.current.load();
-      audioRef.current
-        .play()
-        .catch((err) => console.error("Playback failed:", err));
-      setPlaying(true);
-      setHasCounted(false);
-    }
-  }, [currentTrack]);
+      useEffect(() => {
+        if (currentTrack && audioRef.current) {
+          const isCloudinary = currentTrack.fileUrl?.includes("res.cloudinary.com");
+          const src = isCloudinary
+            ? currentTrack.fileUrl // ✅ Direct Cloudinary link
+            : `${streamBaseUrl}/api/v1/music/stream/${currentTrack._id}`; // ✅ fallback to your backend
+      
+          audioRef.current.src = src;
+          audioRef.current.load();
+          audioRef.current
+            .play()
+            .catch((err) => console.error("Playback failed:", err));
+      
+          setPlaying(true);
+          setHasCounted(false);
+        }
+      }, [currentTrack]);
+      
 
   useEffect(() => {
     if (audioRef.current) {

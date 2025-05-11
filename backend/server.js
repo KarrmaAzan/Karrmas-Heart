@@ -42,7 +42,9 @@ const app = express();
 app.set('trust proxy', 1);
 
 // ✅ Security & parsing middleware
-app.use(helmet());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
 app.use(xss());
 app.use(mongoSanitize());
 app.use(cookieParser());
